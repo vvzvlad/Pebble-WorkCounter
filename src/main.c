@@ -16,6 +16,10 @@ void update_worktime(struct tm* tick_time, TimeUnits units_changed) //Функц
         {
             diff_time = (current_utime - start_utime)+diff_time_storage; //Вычисляем разницу между ВС и ТВ
         }
+    else
+        {
+            diff_time = diff_time_storage; //Иначе просто записываем содержимое накопителя в переменную разницы времени
+        }
     
     strftime(worktime_text, sizeof(worktime_text), "%R", localtime(&diff_time)); //Форматируем время как HH:MM
     text_layer_set_text(worktime_layer, worktime_text); //Выводим форматированное в слой
