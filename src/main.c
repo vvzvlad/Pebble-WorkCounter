@@ -60,6 +60,7 @@ void click_down(ClickRecognizerRef recognizer, void *context)  //Кнопка п
     persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
     persist_write_int(2, diff_time_storage); //Записываем накопительную переменную в постоянное хранилище
     persist_write_int(3, status); //Записываем статус в постоянное хранилище
+    update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
     vibes_short_pulse(); //Вибрируем
 }
 
