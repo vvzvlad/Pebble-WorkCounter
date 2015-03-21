@@ -9,8 +9,34 @@
     "resources": {
         "media": [
             {
-                "file": "images/Fone.png",
-                "name": "FONE_BUTTON",
+                "file": "images/up.png",
+                "name": "UP_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/down.png",
+                "name": "DOWN_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/logo.png",
+                "menuIcon": true,
+                "name": "IMAGE_LOGO",
+                "type": "png"
+            },
+            {
+                "file": "images/reset.png",
+                "name": "RESET_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/start.png",
+                "name": "START_BUTTON",
+                "type": "png"
+            },
+            {
+                "file": "images/pause.png",
+                "name": "PAUSE_BUTTON",
                 "type": "png"
             }
         ]
@@ -19,7 +45,7 @@
     "shortName": "WorkCounter",
     "uuid": "71aa6559-15df-4f33-bad2-1be19c2539d5",
     "versionCode": 1,
-    "versionLabel": "1.0",
+    "versionLabel": "0.4",
     "watchapp": {
         "watchface": false
     }
