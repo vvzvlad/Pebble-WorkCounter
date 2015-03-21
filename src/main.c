@@ -43,8 +43,9 @@ void click_up(ClickRecognizerRef recognizer, void *context)  //Кнопка ст
         {
             start_utime = time(NULL); //Делаем текущее время временем старта
             diff_time = 0; //Сбрасываем счетчик времени
-            status = 2;
+            status = 2; //Изменяем статус на старт
             persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
+            persist_write_int(3, status); //Записываем статус в постоянное хранилище
             update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
             vibes_short_pulse(); //Вибрируем
         }
@@ -55,9 +56,10 @@ void click_down(ClickRecognizerRef recognizer, void *context)  //Кнопка п
     diff_time_storage = diff_time; //Записываем время в накопительную переменную.
     diff_time=0; //Обнуляем подсчитанное время
     start_utime = 0; //Обнуляем время старта
-    status = 1;
+    status = 1; //Изменяем статус на паузу
     persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
     persist_write_int(2, diff_time_storage); //Записываем накопительную переменную в постоянное хранилище
+    persist_write_int(3, status); //Записываем статус в постоянное хранилище
     vibes_short_pulse(); //Вибрируем
 }
 
@@ -66,9 +68,10 @@ void click_select_long(ClickRecognizerRef recognizer, void *context)  //Сбро
     start_utime = 0; //Обнуляем время старта
     diff_time=0; //Обнуляем подсчитанное время
     diff_time_storage=0; //Обнуляем время в накопительной переменной
-    status = 0;
+    status = 0; //Изменяем статус на стоп
     persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
     persist_write_int(2, diff_time_storage); //Записываем накопительную переменную в постоянное хранилище
+    persist_write_int(3, status); //Записываем статус в постоянное хранилище
     update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
     vibes_short_pulse(); //Вибрируем
 }
@@ -86,10 +89,12 @@ void persist_read() //Читаем из памяти сохраненные зн
     {
         start_utime = persist_read_int(1); //То записываем его в переменную start_utime
     }
+    
     if (persist_exists(2))  //Если значение с номером 2 есть в памяти...
     {
         diff_time_storage = persist_read_int(2); //То записываем его в переменную diff_time_storage
     }
+    
     if (persist_exists(3))  //Если значение с номером 3 есть в памяти...
     {
         status = persist_read_int(3); //То записываем его в переменную status
