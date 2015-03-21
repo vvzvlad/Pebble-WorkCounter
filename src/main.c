@@ -28,14 +28,17 @@ void click_up(ClickRecognizerRef recognizer, void *context)  //Кнопка ст
         {
             start_utime = time(NULL); //Делаем текущее время временем старта
             diff_time = 0; //Сбрасываем счетчик времени
+            persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
             update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
             vibes_short_pulse(); //Вибрируем
+
         }
 }
 
 void click_down(ClickRecognizerRef recognizer, void *context)  //Кнопка остановки
 {
     start_utime = 0; //Обнуляем время
+    persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
     vibes_short_pulse(); //Вибрируем
 }
 
@@ -46,9 +49,20 @@ void window_click_provider(void *context) //Функция подписок на
     window_single_click_subscribe(BUTTON_ID_DOWN, click_down); //Подписываемся на событие от кнопки SELECT
 }
 
+void persist_read() //Читаем из памяти сохраненные значения
+{
+    if (persist_exists(1)) //Если значение с номером 1 есть в памяти...
+    {
+        start_utime = persist_read_int(1); //То записываем его в переменную
+    }
+}
+
+
 
 int main(void) 
 {
+    persist_read();
+
     window = window_create(); //Создаем окно
     
     worktime_layer = text_layer_create(GRect(0, 45, 144, 168)); //Создаем текстовый слой
