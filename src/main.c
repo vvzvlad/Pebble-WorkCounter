@@ -1,20 +1,28 @@
 #include <pebble.h>
 Window *window; //Создаем главное окно
 
-TextLayer *worktime_layer; //Создаем слой с временем работы   
+TextLayer *worktime_layer; //Создаем слой с временем работы  
+TextLayer *status_layer; //Создаем слой со статусом
+
 time_t start_utime = 0; //Переменная  времени старта(ВС)
 time_t current_utime = 0; //Переменная текущего времени(ТВ)
 time_t diff_time = 0; //Разница в секундах между текущим и начальным
 int diff_time_storage = 0; //Накопительная переменная разницы в секундах
 char worktime_text[] = "00:00"; //Разница в виде текста
 
+short status; //Создаем переменную статуса
+static const char* status_messages[3]= { "Timer stopped", "Timer paused", "Timer started", }; //Создаем массив с текстами статуса
+
+    
+
 void update_worktime(struct tm* tick_time, TimeUnits units_changed) //Функция вызываемая каждую секунду
 {
     current_utime = time(NULL); //Получаем ТВ
     
-    if (start_utime != 0) //Если время старта не О, значит счетчик запущен
+    if (start_utime != 0) //Если время старта не 0, значит счетчик запущен
         {
             diff_time = (current_utime - start_utime)+diff_time_storage; //Вычисляем разницу между ВС и ТВ
+            
         }
     else
         {
@@ -22,7 +30,9 @@ void update_worktime(struct tm* tick_time, TimeUnits units_changed) //Функц
         }
     
     strftime(worktime_text, sizeof(worktime_text), "%R", localtime(&diff_time)); //Форматируем время как HH:MM
-    text_layer_set_text(worktime_layer, worktime_text); //Выводим форматированное в слой
+    text_layer_set_text(worktime_layer, worktime_text); //Выводим форматированное время в слой
+    text_layer_set_text(status_layer, status_messages[status]); //Выводим статус в слой
+    
 }
 
 
@@ -33,6 +43,7 @@ void click_up(ClickRecognizerRef recognizer, void *context)  //Кнопка ст
         {
             start_utime = time(NULL); //Делаем текущее время временем старта
             diff_time = 0; //Сбрасываем счетчик времени
+            status = 2;
             persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
             update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
             vibes_short_pulse(); //Вибрируем
@@ -41,9 +52,10 @@ void click_up(ClickRecognizerRef recognizer, void *context)  //Кнопка ст
 
 void click_down(ClickRecognizerRef recognizer, void *context)  //Кнопка паузы
 {
-    diff_time_storage = diff_time+diff_time_storage; //Записываем время в накопительную переменную.
+    diff_time_storage = diff_time; //Записываем время в накопительную переменную.
     diff_time=0; //Обнуляем подсчитанное время
     start_utime = 0; //Обнуляем время старта
+    status = 1;
     persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
     persist_write_int(2, diff_time_storage); //Записываем накопительную переменную в постоянное хранилище
     vibes_short_pulse(); //Вибрируем
@@ -53,7 +65,8 @@ void click_select_long(ClickRecognizerRef recognizer, void *context)  //Сбро
 {
     start_utime = 0; //Обнуляем время старта
     diff_time=0; //Обнуляем подсчитанное время
-    diff_time_storage=0; //Обнуляем время в накопительной переменной.
+    diff_time_storage=0; //Обнуляем время в накопительной переменной
+    status = 0;
     persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
     persist_write_int(2, diff_time_storage); //Записываем накопительную переменную в постоянное хранилище
     update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
@@ -77,13 +90,17 @@ void persist_read() //Читаем из памяти сохраненные зн
     {
         diff_time_storage = persist_read_int(2); //То записываем его в переменную diff_time_storage
     }
+    if (persist_exists(3))  //Если значение с номером 3 есть в памяти...
+    {
+        status = persist_read_int(3); //То записываем его в переменную status
+    }
 }
 
 
 
 int main(void) 
 {
-    persist_read();
+    persist_read(); //Читаем из памяти сохраненные значения
 
     window = window_create(); //Создаем окно
     
@@ -93,6 +110,14 @@ int main(void)
     text_layer_set_font(worktime_layer, fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS)); //Устанавливаем шрифт
     text_layer_set_text_alignment(worktime_layer, GTextAlignmentCenter); //Устанавливаем выравнивание
     layer_add_child(window_get_root_layer(window), text_layer_get_layer(worktime_layer)); //Подключаем к окну
+    
+    status_layer = text_layer_create(GRect(0, -5, 144, 168));  //Создаем текстовый слой 
+    text_layer_set_text_color(status_layer, GColorBlack); //Устанавливаем цвет текста
+    text_layer_set_background_color(status_layer, GColorClear); //Устанавливаем цвет фона
+    text_layer_set_font(status_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD)); //Устанавливаем цвет фона
+    text_layer_set_text_alignment(status_layer, GTextAlignmentCenter); //Устанавливаем выравнивание
+    layer_add_child(window_get_root_layer(window), text_layer_get_layer(status_layer)); //Устанавливаем выравнивание
+    
     
     window_set_click_config_provider(window, window_click_provider); //Определяем функцию подписок на кнопки
     
@@ -104,5 +129,7 @@ int main(void)
     app_event_loop(); //Основной цикл программы
     
     text_layer_destroy(worktime_layer); //Уничтожаем слой
+    text_layer_destroy(status_layer); //Уничтожаем слой
+
     window_destroy(window); //Уничтожаем окно
 }
