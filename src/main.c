@@ -5,6 +5,7 @@ TextLayer *worktime_layer; //Создаем слой с временем раб�
 time_t start_utime = 0; //Переменная  времени старта(ВС)
 time_t current_utime = 0; //Переменная текущего времени(ТВ)
 time_t diff_time = 0; //Разница в секундах между текущим и начальным
+int diff_time_storage = 0; //Накопительная переменная разницы в секундах
 char worktime_text[] = "00:00"; //Разница в виде текста
 
 void update_worktime(struct tm* tick_time, TimeUnits units_changed) //Функция вызываемая каждую секунду
@@ -13,7 +14,7 @@ void update_worktime(struct tm* tick_time, TimeUnits units_changed) //Функц
     
     if (start_utime != 0) //Если время старта не О, значит счетчик запущен
         {
-            diff_time = (current_utime - start_utime); //Вычисляем разницу между ВС и ТВ
+            diff_time = (current_utime - start_utime)+diff_time_storage; //Вычисляем разницу между ВС и ТВ
         }
     
     strftime(worktime_text, sizeof(worktime_text), "%R", localtime(&diff_time)); //Форматируем время как HH:MM
@@ -31,29 +32,46 @@ void click_up(ClickRecognizerRef recognizer, void *context)  //Кнопка ст
             persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
             update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
             vibes_short_pulse(); //Вибрируем
-
         }
 }
 
-void click_down(ClickRecognizerRef recognizer, void *context)  //Кнопка остановки
+void click_down(ClickRecognizerRef recognizer, void *context)  //Кнопка паузы
 {
-    start_utime = 0; //Обнуляем время
+    diff_time_storage = diff_time+diff_time_storage; //Записываем время в накопительную переменную.
+    diff_time=0; //Обнуляем подсчитанное время
+    start_utime = 0; //Обнуляем время старта
     persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
+    persist_write_int(2, diff_time_storage); //Записываем накопительную переменную в постоянное хранилище
     vibes_short_pulse(); //Вибрируем
 }
 
+void click_select_long(ClickRecognizerRef recognizer, void *context)  //Сброс подсчитанного значения
+{
+    start_utime = 0; //Обнуляем время старта
+    diff_time=0; //Обнуляем подсчитанное время
+    diff_time_storage=0; //Обнуляем время в накопительной переменной.
+    persist_write_int(1, start_utime); //Записываем время старта в постоянное хранилище
+    persist_write_int(2, diff_time_storage); //Записываем накопительную переменную в постоянное хранилище
+    update_worktime(NULL, SECOND_UNIT); //Обновляем текст на экране
+    vibes_short_pulse(); //Вибрируем
+}
 
 void window_click_provider(void *context) //Функция подписок на кнопки
 {
-    window_single_click_subscribe(BUTTON_ID_UP, click_up); //Подписываемся на событие от кнопки UP
-    window_single_click_subscribe(BUTTON_ID_DOWN, click_down); //Подписываемся на событие от кнопки SELECT
+    window_single_click_subscribe(BUTTON_ID_UP, click_up); //Подписываемся на событие от нажатия кнопки UP
+    window_single_click_subscribe(BUTTON_ID_DOWN, click_down); //Подписываемся на событие от нажатия кнопки SELECT
+    window_long_click_subscribe(BUTTON_ID_SELECT, 1000, click_select_long, NULL); //Подписываемся на событие от долгого нажатия кнопки SELECT
 }
 
 void persist_read() //Читаем из памяти сохраненные значения
 {
     if (persist_exists(1)) //Если значение с номером 1 есть в памяти...
     {
-        start_utime = persist_read_int(1); //То записываем его в переменную
+        start_utime = persist_read_int(1); //То записываем его в переменную start_utime
+    }
+    if (persist_exists(2))  //Если значение с номером 2 есть в памяти...
+    {
+        diff_time_storage = persist_read_int(2); //То записываем его в переменную diff_time_storage
     }
 }
 
