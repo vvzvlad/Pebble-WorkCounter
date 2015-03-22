@@ -4,21 +4,25 @@ Window *window; //Создаем главное окно
 TextLayer *worktime_layer; //Создаем слой с временем работы  
 TextLayer *status_layer; //Создаем слой со статусом
 
+ActionBarLayer *action_bar; //Создаем меню с кнопками
+
 time_t start_utime = 0; //Переменная  времени старта(ВС)
 time_t current_utime = 0; //Переменная текущего времени(ТВ)
 time_t diff_time = 0; //Разница в секундах между текущим и начальным
 int diff_time_storage = 0; //Накопительная переменная разницы в секундах
 char worktime_text[] = "00:00"; //Разница в виде текста
 
+static GBitmap *reset_button; //Создаем графический объект reset_button
+static GBitmap *start_button; //Создаем графический объект start_button
+static GBitmap *pause_button; //Создаем графический объект pause_button
+
 short status; //Создаем переменную статуса
 static const char* status_messages[3]= { "Timer stopped", "Timer paused", "Timer started", }; //Создаем массив с текстами статуса
 
-    
 
 void update_worktime(struct tm* tick_time, TimeUnits units_changed) //Функция вызываемая каждую секунду
 {
     current_utime = time(NULL); //Получаем ТВ
-    
     if (start_utime != 0) //Если время старта не 0, значит счетчик запущен
         {
             diff_time = (current_utime - start_utime)+diff_time_storage; //Вычисляем разницу между ВС и ТВ
@@ -110,23 +114,31 @@ int main(void)
 
     window = window_create(); //Создаем окно
     
-    worktime_layer = text_layer_create(GRect(0, 45, 144, 168)); //Создаем текстовый слой
+    worktime_layer = text_layer_create(GRect(0, 45, 144-ACTION_BAR_WIDTH, 168)); //Создаем текстовый слой
     text_layer_set_text_color(worktime_layer, GColorBlack);  //Устанавливаем цвет текста
     text_layer_set_background_color(worktime_layer, GColorClear); //Устанавливаем цвет фона
     text_layer_set_font(worktime_layer, fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS)); //Устанавливаем шрифт
     text_layer_set_text_alignment(worktime_layer, GTextAlignmentCenter); //Устанавливаем выравнивание
     layer_add_child(window_get_root_layer(window), text_layer_get_layer(worktime_layer)); //Подключаем к окну
     
-    status_layer = text_layer_create(GRect(0, -5, 144, 168));  //Создаем текстовый слой 
+    status_layer = text_layer_create(GRect(0, -5, 144-ACTION_BAR_WIDTH, 168));  //Создаем текстовый слой 
     text_layer_set_text_color(status_layer, GColorBlack); //Устанавливаем цвет текста
     text_layer_set_background_color(status_layer, GColorClear); //Устанавливаем цвет фона
     text_layer_set_font(status_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD)); //Устанавливаем цвет фона
     text_layer_set_text_alignment(status_layer, GTextAlignmentCenter); //Устанавливаем выравнивание
     layer_add_child(window_get_root_layer(window), text_layer_get_layer(status_layer)); //Устанавливаем выравнивание
     
+    reset_button = gbitmap_create_with_resource(RESOURCE_ID_RESET_BUTTON); //Переносим изображения из ресурса в оперативную память
+    start_button = gbitmap_create_with_resource(RESOURCE_ID_START_BUTTON);
+    pause_button = gbitmap_create_with_resource(RESOURCE_ID_PAUSE_BUTTON);
     
-    window_set_click_config_provider(window, window_click_provider); //Определяем функцию подписок на кнопки
-    
+    action_bar = action_bar_layer_create(); //Создаем меню
+    action_bar_layer_add_to_window(action_bar, window); //Прикрепляем к окну
+    action_bar_layer_set_click_config_provider(action_bar, window_click_provider); //Указываем функцию подписок на кнопки
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, start_button); //Указываем, какой кнопке какая иконка соотвествует 
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, pause_button);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, reset_button);
+        
     tick_timer_service_subscribe(SECOND_UNIT, &update_worktime); //Вызывать update_worktime каждую секунду
     update_worktime(NULL, SECOND_UNIT); //Вызываем не дожидаясь обновления
     
@@ -136,6 +148,10 @@ int main(void)
     
     text_layer_destroy(worktime_layer); //Уничтожаем слой
     text_layer_destroy(status_layer); //Уничтожаем слой
+    
+    gbitmap_destroy(reset_button); //Освобождаем память
+    gbitmap_destroy(start_button);
+    gbitmap_destroy(pause_button);
 
     window_destroy(window); //Уничтожаем окно
 }
